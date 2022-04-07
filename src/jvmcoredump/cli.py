@@ -11,6 +11,24 @@ from . import debugger
 
 from pprint import pprint
 
+# GC should be starting somewhere here
+symbols_break = ['SafepointSynchronize::begin',
+                 #OpenJDK17
+                 'GangWorker::run_task'
+]
+# if any of these symbols are present in any of the threads'
+# backtraces, GC activity is present
+symbols_gc = [
+    'StealMarkingTask::do_it',
+    'StealTask::do_it',
+    'DrainStacksCompactionTask::do_it',
+    'VM_ParallelGCFailedAllocation::doit',
+    'StealRegionCompactionTask::do_it',
+    # openjdk
+    'G1EvacuateRegionsBaseTask::work',
+]
+
+
 def main():
     parser = argparse.ArgumentParser('jvmcoredump',
                                      description="Dump JVM cores reliably even during GC loops",
@@ -38,9 +56,25 @@ async def run(dbg:debugger.Debugger, pid:int, java:str, core:str):
     pprint(["run asd", dbg, pid, java, core]);
 
     # let's start the debugger
+    print('Starting the debugger on {java} ... '.format(java=java))
     await dbg.start(java)
 
     # first we attach to the java process
+    print('Attaching to the java process {pid} ...'.format(pid=pid))
     await dbg.attach(pid)
+
+    # insert the breakpoints
+    print('Inserting breakpoints... ')
+    breakpoints = 0;
+    for bp in symbols_break:
+        bpres = await dbg.insertBreak(bp)
+        breakpoints += 1 if bpres else 0
+        pass
+    if breakpoints == 0:
+        print('Failed to insert breakpoints')
+        return
+    print('Inserted {bp} breakpoints'.format(bp=breakpoints))
+
+    # and the bailout
     await dbg.shutdown()
     pass

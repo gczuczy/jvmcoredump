@@ -30,19 +30,23 @@ class GDB(debugger.Debugger):
         await self._gdb.shutdown();
         pass
 
-    async def attach(self, pid:int):
-        self._pid = pid
-        token = await self._gdb.send('-target-attach {pid}'.format(pid=pid))
-        #pprint(token)
-
+    async def _awaitToken(self, token):
+        token = int(token)
+        #pprint(['Waiting for token', token]);
         while True:
             resp = await self._gdb.recv()
-            data = resp.as_native() if hasattr(resp, 'as_native') else None
-            pprint(['raw resp', resp, data])
+            data = None
+            if hasattr(resp, 'as_native'):
+                data = resp.as_native()
+                if 'token' in data and data['token'] == token:
+                    return data
+                pass
+            #pprint(['raw resp', resp, data])
 
             if resp.is_result():
                 if 'class' in data and data['class'] == 'error':
-                    raise Exception('GDB attach error: {e}'.format(e=resp['msg']))
+                    pprint(data)
+                    raise Exception('GDB attach error: {e}'.format(e=data['msg']))
             elif resp.is_async():
                 if data['token'] is None or data['token'] != token and data['type'] == 'Notify':
                     continue
@@ -54,9 +58,24 @@ class GDB(debugger.Debugger):
                 pass
             else:
                 # supposed to be a terminationrecord
-                break
+                #break
+                continue
                 pass
             pass
-
         pass
+
+    async def attach(self, pid:int):
+        self._pid = pid
+        token = await self._gdb.send('-target-attach {pid}'.format(pid=pid))
+        resp = await self._awaitToken(token)
+        pass
+
+    async def insertBreak(self, symbol:str):
+        #pprint(['Inserting breakpoint', symbol])
+        token = await self._gdb.send('-break-insert {bp}'.format(bp=symbol));
+        resp = await self._awaitToken(token)
+        if resp is None: return False
+        #pprint(resp)
+
+        return True
     pass
