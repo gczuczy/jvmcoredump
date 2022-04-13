@@ -12,19 +12,22 @@ from . import debugger
 from pprint import pprint
 
 # GC should be starting somewhere here
-symbols_break = ['SafepointSynchronize::begin',
-                 #OpenJDK17
-                 'GangWorker::run_task'
+symbols_breakpoints = [
+    # Coretto
+    'SafepointSynchronize::begin',
+    #OpenJDK17
+    'GangWorker::run_task'
 ]
 # if any of these symbols are present in any of the threads'
 # backtraces, GC activity is present
-symbols_gc = [
+symbols_gcsyms = [
+    # Coretto
     'StealMarkingTask::do_it',
     'StealTask::do_it',
     'DrainStacksCompactionTask::do_it',
     'VM_ParallelGCFailedAllocation::doit',
     'StealRegionCompactionTask::do_it',
-    # openjdk
+    # OpenJDK17
     'G1EvacuateRegionsBaseTask::work',
 ]
 
@@ -52,8 +55,28 @@ def main():
     asyncio.run(run(dbg, int(args.pid), args.java, args.core))
     pass
 
+async def insert_breakpoints(dbg:debugger.Debugger):
+    breakpoints = 0;
+    for bp in symbols_breakpoints:
+        bpres = await dbg.insertBreak(bp)
+        breakpoints += 1 if bpres else 0
+        pass
+    return breakpoints
+
+async def check_ingc(dbg):
+    threadids = await dbg.getThreadList()
+    for thid in threadids:
+        stack = await dbg.getThreadStack(thid);
+        for frame in stack:
+            #pprint(['Checking sym', frame['frame']['func']])
+            if frame['frame']['func'] in symbols_gcsyms:
+                return True,frame['frame']['func']
+            pass
+        pass
+    return False,None
+
 async def run(dbg:debugger.Debugger, pid:int, java:str, core:str):
-    pprint(["run asd", dbg, pid, java, core]);
+    #pprint(["run asd", dbg, pid, java, core]);
 
     # let's start the debugger
     print('Starting the debugger on {java} ... '.format(java=java))
@@ -65,16 +88,30 @@ async def run(dbg:debugger.Debugger, pid:int, java:str, core:str):
 
     # insert the breakpoints
     print('Inserting breakpoints... ')
-    breakpoints = 0;
-    for bp in symbols_break:
-        bpres = await dbg.insertBreak(bp)
-        breakpoints += 1 if bpres else 0
-        pass
+    breakpoints = await insert_breakpoints(dbg)
     if breakpoints == 0:
         print('Failed to insert breakpoints')
         return
     print('Inserted {bp} breakpoints'.format(bp=breakpoints))
 
+    while True:
+        # continue now
+        await dbg.continueProcess()
+
+        # await break
+        brk = await dbg.waitForBreak()
+
+        # check whether we are in GC at the break
+        print('Break at {sym}, checking for GC activity'.format(sym=brk['frame']['func']))
+        ingc,sym = await check_ingc(dbg)
+        if not ingc: break
+        print('Still in gc symbol {sym} is on stack'.format(sym = sym))
+        pass
+
+    print('Dumping core to {f}'.format(f=core))
+    await dbg.dumpCore(core)
+
+    print('Enjoy')
     # and the bailout
     await dbg.shutdown()
     pass

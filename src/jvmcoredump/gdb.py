@@ -78,4 +78,50 @@ class GDB(debugger.Debugger):
         #pprint(resp)
 
         return True
+
+    async def continueProcess(self):
+        token = await self._gdb.send('-exec-continue')
+        resp = await self._awaitToken(token)
+        #pprint(resp)
+        pass
+
+    async def waitForBreak(self):
+        '''
+        wait for breaking
+        '''
+        while True:
+            resp = await self._gdb.recv()
+            data = None
+            if hasattr(resp, 'as_native'):
+                data = resp.as_native()
+                if 'class' in data and data['class'] == 'stopped' and data['reason'] == 'breakpoint-hit':
+                    return data
+                pass
+            pass
+        pass
+
+    async def getThreadList(self):
+        '''
+        This is ought to return the thread IDs
+        '''
+        token = await self._gdb.send('-thread-list-ids')
+        resp = await self._awaitToken(token)
+        #pprint(resp)
+        return resp['thread-ids']['thread-id']
+
+    async def getThreadStack(self, threadid):
+        # select the thread
+        token = await self._gdb.send('-thread-select {thid}'.format(thid = threadid));
+        await self._awaitToken(token)
+
+        # get the backtrace
+        token = await self._gdb.send('-stack-list-frames')
+        resp = await self._awaitToken(token)
+        return resp['stack']
+
+    async def dumpCore(self, corefile:str):
+        token = await self._gdb.send('-interpreter-exec console "generate-core-file {f}"'
+                                     .format(f=corefile));
+        await self._awaitToken(token)
+        pass
     pass
