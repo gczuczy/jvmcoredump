@@ -8,7 +8,7 @@ Currently a similar tool has been used on Coretto, on which this rewrite is base
 
 Get it from pip:
 ```
-pip install jvmcoredump
+pip install jvmcoredump-gczuczy
 ```
 
 Also please make sure either your libjvm.so is not stripped, or of it's stripped, you have installed the supplemental symbol tables (for ubuntu it's in the -dbg package).
