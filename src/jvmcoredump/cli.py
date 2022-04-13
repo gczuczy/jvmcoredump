@@ -86,15 +86,15 @@ async def run(dbg:debugger.Debugger, pid:int, java:str, core:str):
     print('Attaching to the java process {pid} ...'.format(pid=pid))
     await dbg.attach(pid)
 
-    # insert the breakpoints
-    print('Inserting breakpoints... ')
-    breakpoints = await insert_breakpoints(dbg)
-    if breakpoints == 0:
-        print('Failed to insert breakpoints')
-        return
-    print('Inserted {bp} breakpoints'.format(bp=breakpoints))
-
     while True:
+        # insert the breakpoints
+        print('(Re)inserting breakpoints... ')
+        breakpoints = await insert_breakpoints(dbg)
+        if breakpoints == 0:
+            print('Failed to insert breakpoints')
+            return
+        print('Inserted {bp} breakpoints'.format(bp=breakpoints))
+
         # continue now
         await dbg.continueProcess()
 
