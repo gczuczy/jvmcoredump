@@ -8,7 +8,7 @@ import abc
 class Debugger(metaclass = abc.ABCMeta):
 
     @abc.abstractmethod
-    async def start(self, java:str):
+    async def start(self, java:str, core:str=None):
         pass
 
     @abc.abstractmethod

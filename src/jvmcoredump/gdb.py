@@ -21,9 +21,13 @@ class GDB(debugger.Debugger):
             
         return "<GDB({g})>".format(g = self._gdbbin)
 
-    async def start(self, java:str):
-        await self._gdb.spawn(path2bin = self._gdbbin,
-                              args = [java])
+    async def start(self, java:str, core:str=None):
+        if core is None:
+            await self._gdb.spawn(path2bin = self._gdbbin,
+                                  args = [java])
+        else:
+            await self._gdb.spawn(path2bin = self._gdbbin,
+                                  args = [java, core])
         pass
 
     async def shutdown(self):

@@ -102,52 +102,23 @@ Adding support for these is remarkably easy, just the symbols have to be extende
 So, if you happen to come across such a situation, please:
 
  - If you would like to, you can look for the missed symbols, add it to them to the symbol_ lists at cli.py, and submit a pull request
- - If you don't know how to, please submit a bug report, including the backtraces of all threads, and I will get it from there.
+ - If you don't know how to, please submit a bug report, including the backtraces of all threads, and I will get it from there. See jvmcoresyms
 
 This is how to extract the backtraces:
-Attach GDB to the java process:
+
 ```
-#$ gdb `which java` $(ps auxww | awk '/java -/ && !/awk/ {print $2}')
-GNU gdb (Ubuntu 9.2-0ubuntu1~20.04.1) 9.2
+$ jvmcoresyms -c ~/test.core | tee symlist.yaml
+# Opening core file /usr/bin/java /home/gczuczy/test.core
+# Analyzing core...
+---
+'Thread #1':
+- GangWorker::run_task
+- GangWorker::loop
+- GangWorker::run
 (...)
-Attaching to program: /usr/bin/java, process 14539
-[New LWP 14540]
-[New LWP 14541]
-(...)
-(gdb)
 ```
 
-Check the list of threads:
-```
-(gdb) info thr
- Id   Target Id                                           Frame
- 1    Thread 0x7f251991e100 (LWP 14539) "java"            __pthread_clockjoin_ex (threadid=139797295445760,
-     thread_return=thread_return@entry=0x7fff23a49e38, clockid=clockid@entry=0, abstime=abstime@entry=0x0,
-         block=block@entry=true) at pthread_join_common.c:145
-
-2    Thread 0x7f251822b700 (LWP 14540) "java"            syscall () at ../sysdeps/unix/sysv/linux/x86_64/syscall.S:38
-3    Thread 0x7f24fa587700 (LWP 14541) "GC Thread#0"     0x00007f2518c9ad8a in CompressedOops::decode_raw (
-     v=(unknown: -1052089560)) at ./src/hotspot/share/oops/compressedOops.hpp:94
-(...)      
-```
-
-Go through them (GC* threads supposed to be enough), and get the backtrace on each:
-```
-(gdb) thread 3
-[Switching to thread 3 (Thread 0x7f24fa587700 (LWP 14541))]
-#0  0x00007f2518c9ad8a in CompressedOops::decode_raw (v=(unknown: -1052089560))
-    at ./src/hotspot/share/oops/compressedOops.hpp:94
-94      ./src/hotspot/share/oops/compressedOops.hpp: No such file or directory.
-(gdb) bt
-#0  0x00007f2518c9ad8a in CompressedOops::decode_raw (v=(unknown: -1052089560))
-    at ./src/hotspot/share/oops/compressedOops.hpp:94
-#1  CompressedOops::decode_not_null (v=(unknown: -1052089560)) at ./src/hotspot/share/oops/compressedOops.inline.hpp:56
-#2  G1FullGCMarker::mark_and_push<narrowOop> (p=0xff01164c, this=0x7f24e0170980)
-        at ./src/hotspot/share/gc/g1/g1FullGCMarker.inline.hpp:81
-(..)	
-```
-
-This per-thread backtrace is needed to find the required symbols.
+And attach the symlist.yaml into your bugreport, this contains the required information to see what's got missed
 
 # History and notes
 
