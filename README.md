@@ -158,5 +158,3 @@ My initial thought was that maybe a timing attack would work, because it's a loo
 Upon attaching a gdb I've realized that I was mostly right. Where I was wrong, was I didn't need a timing technique here, just to find the calls' symbols which are initiating the GC code. Once empyrically getting these, testing showed that the coredumps acquired on the breakpoints on these symbols are indeed not corrupted.
 
 So, after this our FullGC issues were gone in a record amount of time.
-
-Happy customers, happy devs, and my work was appreciated with a devaluation, explained with "motivation".
