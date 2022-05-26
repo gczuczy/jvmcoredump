@@ -87,9 +87,13 @@ JVM version is 17.0.2+8-Ubuntu-120.04
 heap written to /tmp/jmap
 ```
 
-# TODO
+# Changelog
 
-I still have to upload this to pip, so that's kind of the first item here.
+ - Version 0.3 (20220526):
+   - Tested on python3.7, adjusted dependencies accordingly
+   - If not in GC on startup, then don't go into the breakpoint-loop
+
+# TODO
 
 When I have the time, I would like to make this work with LLDB as well - currently only gdb is implemented. I haven't yet done the complete legword to look for a machine interface for LLDB, but I guess they also have one. So, this feature is still upcoming
 
