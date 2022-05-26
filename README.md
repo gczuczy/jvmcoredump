@@ -92,6 +92,8 @@ heap written to /tmp/jmap
  - Version 0.3 (20220526):
    - Tested on python3.7, adjusted dependencies accordingly
    - If not in GC on startup, then don't go into the breakpoint-loop
+ - Version 0.5 (20220526):
+   - Packaging fixes
 
 # TODO
 
