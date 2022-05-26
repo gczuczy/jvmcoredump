@@ -86,7 +86,14 @@ async def run(dbg:debugger.Debugger, pid:int, java:str, core:str):
     print('Attaching to the java process {pid} ...'.format(pid=pid))
     await dbg.attach(pid)
 
-    while True:
+    loop = True
+    print('Checkin current GC status...')
+    ingc,sym = await check_ingc(dbg)
+    if not ingc:
+        print('Not in GC right now, skipping loop')
+        loop = False
+
+    while loop:
         # insert the breakpoints
         print('(Re)inserting breakpoints... ')
         breakpoints = await insert_breakpoints(dbg)
